@@ -157,7 +157,7 @@ void loop() {
       case 2: {
         lcd.clear();
         lcd.home();
-        lcd.print("RFID does not");
+        lcd.print("RFID is not");
         lcd.setCursor(0, 1);
         lcd.print("connected");
         delay(3000);
@@ -181,7 +181,7 @@ void loop() {
         noTone(piezoPin);
         lcd.clear();
         lcd.home();
-        lcd.print("Test is ended");
+        lcd.print("Test finished");
         delay(2000);
         end();
         break;
