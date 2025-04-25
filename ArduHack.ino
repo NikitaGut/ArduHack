@@ -1,8 +1,21 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include "SPI.h"
+#include "MFRC522.h"
 
-int piezoPin = 12;
+// RFID
+#define RST_PIN 9 // RES pin
+#define SS_PIN  10 // SDA (SS) pin
 
+// RFID
+byte readCard[4];
+String tagID = "";
+MFRC522 mfrc522(SS_PIN, RST_PIN);
+
+//piezo
+int piezoPin = 8;
+
+//buttons
 const int buttonPin1 = 2;
 const int buttonPin2 = 3;
 const int selectPin = 4;
@@ -67,6 +80,9 @@ void end() {
 }
 
 void setup() {
+  SPI.begin();
+  mfrc522.PCD_Init();
+  
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
   pinMode(selectPin, INPUT);
@@ -157,10 +173,39 @@ void loop() {
       case 2: {
         lcd.clear();
         lcd.home();
-        lcd.print("RFID is not");
+        lcd.print("RFID");
+
+        /* lcd.print("RFID is not");
         lcd.setCursor(0, 1);
         lcd.print("connected");
-        delay(3000);
+        delay(3000); */
+
+        selectState = LOW;
+
+        while(selectState == LOW) {
+          delay(150);
+          selectState = digitalRead(selectPin);
+          while(getID()) {
+            lcd.home();
+            tone(piezoPin, 1000, 100);
+            lcd.print("RFID");
+            lcd.setCursor(0, 1);
+            lcd.print("ID: ");
+            lcd.print(tagID);
+          }
+        }
+        tone(piezoPin, 1000, 100);
+        end();
+        delay(150);
+        break;
+      }
+      case 3: {
+        lcd.clear();
+        lcd.home();
+        lcd.print("To use this,");
+        lcd.setCursor(0, 1);
+        lcd.print("connect Bluetooth");
+        delay(4500);
         end();
         break;
       }
@@ -188,4 +233,24 @@ void loop() {
       }
     }
   }
+}
+
+boolean getID() {
+  if (! mfrc522.PICC_IsNewCardPresent()) {
+    return false;
+  }
+
+  if (! mfrc522.PICC_ReadCardSerial()) {
+    return false;
+  }
+
+  tagID = "";
+  
+  for (uint8_t i = 0; i < 4; i++) {
+    tagID.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+
+  tagID.toUpperCase();
+  mfrc522.PICC_HaltA();
+  return true;
 }
